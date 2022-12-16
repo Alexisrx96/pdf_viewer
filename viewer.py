@@ -1,5 +1,5 @@
 from threading import Thread
-from tkinter import (BOTH, BOTTOM, DISABLED, END, HORIZONTAL, LEFT, RIGHT, TOP,
+from tkinter import (BOTH, BOTTOM, DISABLED, HORIZONTAL, LEFT, RIGHT, TOP,
                      VERTICAL, Label, Scrollbar, StringVar, Text, X, Y)
 from tkinter.ttk import Progressbar
 
@@ -20,7 +20,7 @@ class PDFViewerFrameBuilder:
         percentage = ViewerHelper.get_percentage(viewer.progressbar.progress,
                                                  total)
         if percentage > 100:
-            logger.warning(f'More than 100 percent ({percentage:.2f})')
+            logger.warning(f'More than 100 ({percentage:.2%})')
             return
         viewer.progressbar.update(percentage)
 
@@ -69,24 +69,32 @@ class PDFViewerFrameBuilder:
         width, height = viewer.dimensions
         scroll_x, scroll_y = viewer.scrolls
         logger.info("creating pdf container...")
-        container = Text(viewer.frame,
-                         yscrollcommand=scroll_y.set,
-                         xscrollcommand=scroll_x.set,
-                         width=width,
-                         height=height)
+        container = Text(
+            viewer.frame,
+            yscrollcommand=scroll_y.set,
+            xscrollcommand=scroll_x.set,
+            width=width,
+            height=height,
+        )
+
+        container.configure(state=DISABLED, cursor='arrow')
+        scroll_x.config(command=container.xview)
+        scroll_y.config(command=container.yview)
         container.pack(
             side=LEFT,
             fill=BOTH,
         )
-        container.configure(state=DISABLED)
-        scroll_x.config(command=container.xview)
-        scroll_y.config(command=container.yview)
         viewer.pdf_container = container
         return cls
 
     @classmethod
-    def __read_page(cls, viewer: PDFViewerFrame, total: int, page: Page):
-        _page = ViewerHelper.extract_image(page)
+    def __read_page(cls,
+                    viewer: PDFViewerFrame,
+                    total: int,
+                    page: Page,
+                    zoom_ratio: float = 1) -> Page:
+        viewer.dimensions
+        _page = ViewerHelper.extract_image(page, zoom_ratio, zoom_ratio)
         viewer.pages.append(_page)
         if viewer.has_loading_bar:
             cls.__update_progressbar(viewer, total)
@@ -95,11 +103,16 @@ class PDFViewerFrameBuilder:
     @classmethod
     def __fill_container(cls, viewer: PDFViewerFrame):
         open_pdf = Document(viewer.pdf_location)
+
+        if not open_pdf:
+            return
+        zoom_ratio = (ViewerHelper.get_zoom_ratio(viewer.dimensions[0],
+                                                  open_pdf[0])
+                      if viewer.fit_page_to_container else 1)
         total = len(open_pdf)
         for page in open_pdf:
-            image = cls.__read_page(viewer, total, page)
-            viewer.pdf_container.image_create(END, image=image)
-            viewer.pdf_container.insert(END, "\n")
+            image = cls.__read_page(viewer, total, page, zoom_ratio)
+            viewer.add_image(image)
 
         if viewer.has_loading_bar:
             viewer.progressbar.forget()
