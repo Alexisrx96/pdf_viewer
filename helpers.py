@@ -1,6 +1,6 @@
 from tkinter import PhotoImage
 
-from fitz import Page, Pixmap
+from fitz import Matrix, Page, Pixmap
 
 
 class ViewerHelper:
@@ -13,9 +13,10 @@ class ViewerHelper:
         return current_page_num / float(total)
 
     @staticmethod
-    def extract_image(page: Page) -> PhotoImage:
+    def extract_image(page: Page, zoom_x: float, zoom_y: float) -> PhotoImage:
         """Converts a page to a photo image and adds transparency
         if necessary"""
-        _pix: Pixmap = page.get_pixmap()
+        mat = Matrix(zoom_x, zoom_y)
+        _pix: Pixmap = page.get_pixmap(matrix=mat)
         pix = Pixmap(_pix, 0) if _pix.alpha else _pix
         return PhotoImage(data=pix.tobytes("ppm"))
