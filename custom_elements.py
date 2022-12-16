@@ -40,6 +40,8 @@ class PDFViewerFrame:
     """Parent frame"""
     pdf_location: str
     """Path to PDF file"""
+    fit_page_to_container: bool = field(default=True)
+    """Fit the image to container width"""
     has_loading_bar: bool = field(default=True)
     """Displays loading bar at the top of the parent frame"""
 
