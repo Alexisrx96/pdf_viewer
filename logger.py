@@ -1,6 +1,5 @@
 import logging
 
-
 logger = logging.getLogger('Pdf_viewer')
 format = logging.Formatter('%(asctime)s %(message)s')
 stream = logging.StreamHandler()
