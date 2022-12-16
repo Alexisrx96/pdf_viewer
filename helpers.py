@@ -20,3 +20,8 @@ class ViewerHelper:
         _pix: Pixmap = page.get_pixmap(matrix=mat)
         pix = Pixmap(_pix, 0) if _pix.alpha else _pix
         return PhotoImage(data=pix.tobytes("ppm"))
+
+    @classmethod
+    def get_zoom_ratio(cls, width: int, page: Page) -> float:
+        image = cls.extract_image(page, 1, 1)
+        return width / image.width()
