@@ -58,6 +58,10 @@ class PDFViewerFrame:
     def __post_init__(self):
         self.dimensions = self.frame['width'], self.frame['height']
 
+    def add_image(self, image):
+        self.pdf_container.image_create(END, image=image)
+        self.pdf_container.insert(END, "\n")
+
     def forget(self):
         """Remove progressbar and label."""
         logger.info("Removing progressbar")
