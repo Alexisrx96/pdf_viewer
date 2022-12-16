@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass, field
-from tkinter import Frame, Label, PhotoImage, Scrollbar, StringVar, Text
+from tkinter import END, Frame, Label, PhotoImage, Scrollbar, StringVar, Text
 from tkinter.ttk import Progressbar
 
 from logger import logger
@@ -26,11 +26,11 @@ class ProgressbarElement:
 
     def update(self, percentage: float):
         """Update the progressbar percentage values and update the label."""
-        if int(percentage * 10) % 100 == 0:
-            logger.info(f"Progress: {percentage:.2f}%")
-        self.loading['value'] = percentage
-        self.text.set("Please wait!, your pdf is loading "
-                      f"{math.floor(percentage)}%")
+        value = percentage * 100
+        if math.floor(value * 10) % 3 == 0:
+            logger.info(f"Progress: {percentage:.2%}")
+        self.loading['value'] = value
+        self.text.set(f"Please wait!, your pdf is loading {percentage:.2%}")
 
 
 @dataclass
@@ -49,7 +49,7 @@ class PDFViewerFrame:
                                                  default_factory=tuple)
     """Scroll bars for the PDF container"""
     dimensions: tuple[int, int] = field(init=False)
-    """dimensions of the parent frame"""
+    """dimensions of the parent frame (width, height)"""
     progressbar: ProgressbarElement = field(init=False, default=None)
     """Progressbar element"""
     pages: list[PhotoImage] = field(default_factory=list, init=False)
