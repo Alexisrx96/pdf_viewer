@@ -4,8 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pymupdf = "*"
 
 [dev-packages]
+flake8 = "*"
+yapf = "*"
+isort = "*"
 
 [requires]
 python_version = "3.10"
