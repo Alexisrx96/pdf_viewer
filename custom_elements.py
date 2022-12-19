@@ -1,7 +1,8 @@
 import math
 from dataclasses import dataclass, field
-from tkinter import END, Frame, Label, PhotoImage, Scrollbar, StringVar, Text
-from tkinter.ttk import Progressbar
+from tkinter import END, Frame, PhotoImage, StringVar, Text
+from tkinter.ttk import Progressbar, Label, Scrollbar
+from typing import Optional
 
 from logger import logger
 
@@ -45,14 +46,14 @@ class PDFViewerFrame:
     has_loading_bar: bool = field(default=True)
     """Displays loading bar at the top of the parent frame"""
 
-    pdf_container: Text = field(init=False, default=None)
+    pdf_container: Optional[Text] = field(init=False, default=None)
     """Container for the PDF images"""
     scrolls: tuple[Scrollbar, Scrollbar] = field(init=False,
                                                  default_factory=tuple)
     """Scroll bars for the PDF container"""
     dimensions: tuple[int, int] = field(init=False)
     """dimensions of the parent frame (width, height)"""
-    progressbar: ProgressbarElement = field(init=False, default=None)
+    progressbar: Optional[ProgressbarElement] = field(init=False, default=None)
     """Progressbar element"""
     pages: list[PhotoImage] = field(default_factory=list, init=False)
     """Store pdf images"""
@@ -61,6 +62,8 @@ class PDFViewerFrame:
         self.dimensions = self.frame['width'], self.frame['height']
 
     def add_image(self, image):
+        if not self.pdf_container:
+            return
         self.pdf_container.image_create(END, image=image)
         self.pdf_container.insert(END, "\n")
 
