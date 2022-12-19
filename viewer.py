@@ -1,34 +1,37 @@
 from threading import Thread
 from tkinter import (BOTH, BOTTOM, DISABLED, HORIZONTAL, LEFT, RIGHT, TOP,
-                     VERTICAL, StringVar, Text, X, Y)
-from tkinter.ttk import Progressbar, Label, Scrollbar
+                     VERTICAL, PhotoImage, StringVar, Text, X, Y)
+from tkinter.ttk import Label, Progressbar, Scrollbar
 
 from fitz import Document, Page
 
 from custom_elements import PDFViewerFrame, ProgressbarElement
-from helpers import ViewerHelper
+from protocols import ViewerHelperProtocol
 from logger import logger
 
 
 class PDFViewerFrameBuilder:
     """Builder for creating a 'PDFViewerFrame'"""
 
-    @classmethod
-    def __update_progressbar(cls, viewer: PDFViewerFrame, total: int):
+    def __init__(self, viewer_helper: ViewerHelperProtocol) -> None:
+        self.helper = viewer_helper
+
+    def __update_progressbar(self, viewer: PDFViewerFrame, total: int):
         """Determinate progress bar progress"""
+        if not viewer.progressbar:
+            return
         viewer.progressbar.progress += 1
-        percentage = ViewerHelper.get_percentage(viewer.progressbar.progress,
-                                                 total)
+        percentage = self.helper.get_percentage(viewer.progressbar.progress,
+                                                total)
         if percentage > 100:
             logger.warning(f'More than 100 ({percentage:.2%})')
             return
         viewer.progressbar.update(percentage)
 
-    @classmethod
-    def add_scrollbar(cls, viewer: PDFViewerFrame):
+    def add_scrollbar(self, viewer: PDFViewerFrame):
         """Add scroll bars to the viewer"""
         if viewer.scrolls:
-            return cls
+            return self
         logger.info("getting scroll bars...")
         scroll_y = Scrollbar(viewer.frame, orient=VERTICAL)
         scroll_x = Scrollbar(viewer.frame, orient=HORIZONTAL)
@@ -36,12 +39,11 @@ class PDFViewerFrameBuilder:
         scroll_x.pack(fill=X, side=BOTTOM)
         scroll_y.pack(fill=Y, side=RIGHT)
         viewer.scrolls = scroll_x, scroll_y
-        return cls
+        return self
 
-    @classmethod
-    def add_progressbar(cls, viewer: PDFViewerFrame):
+    def add_progressbar(self, viewer: PDFViewerFrame):
         if not viewer.has_loading_bar or viewer.progressbar:
-            return cls
+            return self
         logger.info("creating variable...")
         percentage_str = StringVar()
 
@@ -60,12 +62,11 @@ class PDFViewerFrameBuilder:
         logger.info("returning progressbar element...")
         viewer.progressbar = ProgressbarElement(percentage_str, display_msg,
                                                 loading)
-        return cls
+        return self
 
-    @classmethod
-    def add_container(cls, viewer: PDFViewerFrame):
+    def add_container(self, viewer: PDFViewerFrame):
         if viewer.pdf_container:
-            return cls
+            return self
         width, height = viewer.dimensions
         scroll_x, scroll_y = viewer.scrolls
         logger.info("creating pdf container...")
@@ -85,56 +86,54 @@ class PDFViewerFrameBuilder:
             fill=BOTH,
         )
         viewer.pdf_container = container
-        return cls
+        return self
 
-    @classmethod
-    def __read_page(cls,
+    def __read_page(self,
                     viewer: PDFViewerFrame,
                     total: int,
                     page: Page,
-                    zoom_ratio: float = 1) -> Page:
+                    zoom_ratio: float = 1) -> PhotoImage:
         viewer.dimensions
-        _page = ViewerHelper.extract_image(page, zoom_ratio, zoom_ratio)
+        _page = self.helper.extract_image(page,
+                                          zoom_ratio,
+                                          zoom_ratio,
+                                          offsets=(0.05, 0))
         viewer.pages.append(_page)
         if viewer.has_loading_bar:
-            cls.__update_progressbar(viewer, total)
+            self.__update_progressbar(viewer, total)
         return _page
 
-    @classmethod
-    def __fill_container(cls, viewer: PDFViewerFrame):
+    def __fill_container(self, viewer: PDFViewerFrame):
         open_pdf = Document(viewer.pdf_location)
 
         if not open_pdf:
             return
-        zoom_ratio = (ViewerHelper.get_zoom_ratio(viewer.dimensions[0],
-                                                  open_pdf[0])
+        zoom_ratio = (self.helper.get_zoom_ratio(viewer.dimensions[0],
+                                                 open_pdf[0])
                       if viewer.fit_page_to_container else 1)
         total = len(open_pdf)
         for page in open_pdf:
-            image = cls.__read_page(viewer, total, page, zoom_ratio)
+            image = self.__read_page(viewer, total, page, zoom_ratio)
             viewer.add_image(image)
 
-        if viewer.has_loading_bar:
+        if viewer.progressbar:
             viewer.progressbar.forget()
             viewer.progressbar = None
 
-    @classmethod
-    def __filler(cls, viewer: PDFViewerFrame):
-        t1 = Thread(target=lambda: cls.__fill_container(viewer))
+    def __filler(self, viewer: PDFViewerFrame):
+        t1 = Thread(target=lambda: self.__fill_container(viewer))
         t1.start()
 
-    @classmethod
-    def fill(cls, viewer: PDFViewerFrame):
+    def fill(self, viewer: PDFViewerFrame):
         if not viewer.has_loading_bar:
-            cls.__filler(viewer)
+            self.__filler(viewer)
             return
-        viewer.frame.master.after(250, lambda: cls.__filler(viewer))
+        viewer.frame.master.after(250, lambda: self.__filler(viewer))
 
-    @classmethod
-    def build(cls, viewer: PDFViewerFrame):
+    def build(self, viewer: PDFViewerFrame):
         logger.info("starting...")
         logger.info("loading bar: %s" % viewer.has_loading_bar)
-        cls.add_scrollbar(viewer)\
+        self.add_scrollbar(viewer)\
             .add_progressbar(viewer)\
             .add_container(viewer)\
             .fill(viewer)
