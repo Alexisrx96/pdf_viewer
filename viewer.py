@@ -1,7 +1,7 @@
 from threading import Thread
 from tkinter import (BOTH, BOTTOM, DISABLED, HORIZONTAL, LEFT, RIGHT, TOP,
-                     VERTICAL, Label, Scrollbar, StringVar, Text, X, Y)
-from tkinter.ttk import Progressbar
+                     VERTICAL, StringVar, Text, X, Y)
+from tkinter.ttk import Progressbar, Label, Scrollbar
 
 from fitz import Document, Page
 
